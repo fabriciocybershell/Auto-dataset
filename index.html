@@ -7,7 +7,7 @@
         </head>
   </head>
   <body>
-  	<audio src="aviso.mp3" id="voice"></audio>
+  	<div><h1 class="mensage"></h1></div>
   	    <div class="area" >
         <ul class="circles">
                 <li></li>
@@ -22,7 +22,6 @@
                 <li></li>
         </ul>
 </div>
-
     <script>
 window.onload = function() {
     const queryString = window.location.search;
@@ -33,12 +32,8 @@ window.onload = function() {
     console.log(shopd);
 
     setTimeout(() => {
-        document.getElementById("voice").play();
-    }, 1000);
-
-    setTimeout(() => {
         window.location.href="https://t.me/roboimpulsionarshopee_bot?start=code="+code+"shop_id="+shopd;
-    }, 16000);
+    }, 3000);
 }
 
       //definir timer de tempo para explicar e etc
