@@ -23,7 +23,7 @@
         </ul>
 </div>
     <script>
-window.onload = function() {
+//window.onload = function() {
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
     const code = urlParams.get('code');
@@ -31,10 +31,10 @@ window.onload = function() {
     const shopd = urlParams.get('shop_id')
     console.log(shopd);
 
-   // setTimeout(() => {
+    setTimeout(() => {
         window.location.href="https://t.me/roboimpulsionarshopee_bot?start=code="+code+"shop_id="+shopd;
-   // }, 3000);
-}
+    }, 500);
+//}
       
     </script>
   </body>
