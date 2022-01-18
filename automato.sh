@@ -31,7 +31,7 @@ baixar(){
 					contagem=$((contagem+1))
 				}
 			}
-		done < <(wget -qO- "${F1}" | tr ',' '\n')
+		done < <(wget -qO- "https://youtube.com/playlist?list=${ID}" | tr ',' '\n')
 
 		contagem=0
 		for video in ${videos[@]};do 
