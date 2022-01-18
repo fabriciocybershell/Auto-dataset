@@ -1,18 +1,49 @@
 #! /bin/bash
 
 baixar(){
-    ender=${F1##*/}
-    ender=${ender##*watch\?v\=}
-    echo "https://www.youtube.com/watch?v=${ender}"
-#    youtube-dl --audio-format mp3 "https://www.youtube.com/watch?v=${ender}"
 
-    midia=$(youtube-dl --get-url "https://www.youtube.com/watch?v=${ender}")
+	#coletar ID
+	[[ "${F1}" =~ /(watch|playlist)\?(v|list)=([a-zA-Z0-9_-]+) ]]
+	ID="${BASH_REMATCH[3]}"
+	TIPO="${BASH_REMATCH[1]}"
 
+#  [[ "${TIPO}" = "watch" ]] && echo "https://www.youtube.com/watch?v=${ID}"
+#  [[ "${TIPO}" = "playlist" ]] && echo "https://www.youtube.com/playlist?list=${ID}"
+
+	[[ "${TIPO}" = "watch" ]] && {
+		midia=$(youtube-dl --get-url "https://www.youtube.com/watch?v=${ID}")
 		while read linha;do
 			link="${linha}"
 		done <<< "${midia}"
 
-		wget "${link}" -oO "audio_${contagem}.mp3"
+		wget "${link}" -O "audio_${contagem}.mp3"
+	}
+
+	[[ "${TIPO}" = "playlist" ]] && {
+		echo "playlist detectada, realizando varreduras ..."
+
+		contagem=1
+		while read linha;do
+			[[ "${linha}" =~ /watch\?v=([a-zA-Z0-9_-]+) ]] && {
+				[[ "${videos[@]}" = *"${BASH_REMATCH[1]}"* ]] || {
+					printf "https://www.youtube.com/watch?v=${BASH_REMATCH[1]}&list=${ID}&index=${contagem}\n"
+					videos[${contagem}]="https://www.youtube.com/watch?v=${BASH_REMATCH[1]}&list=${ID}&index=${contagem}"
+					contagem=$((contagem+1))
+				}
+			}
+		done < <(wget -qO- "${F1}" | tr ',' '\n')
+
+		contagem=0
+		for video in ${videos[@]};do 
+			midia=$(youtube-dl --get-url "${video}")
+			while read linha;do
+				link="${linha}"
+			done <<< "${midia}"
+
+			wget "${link}" -O "audio_${contagem}.mp3"
+			contagem=$((contagem+1))
+		done
+	}
 }
 
 get_title(){
@@ -40,7 +71,8 @@ spider(){
 		    [[ ${F1} = *"youtu"* ]] && {
 			    echo -e "\ndownloading ⬇️:${F1}, please wait ...\n"
 		        baixar
-				} || {
+				} 
+				[[ ${F1} = *"youtu"* ]] || {
 			      get_title
 			      [[ ${busca} && ${busca} =~ (youtub?e?|tidal|soundcloud|deezer|spotfy|apple) ]] && {
 			        spider
@@ -54,6 +86,7 @@ spider(){
 			      }
 			  }
 
+			unset F1
 			IFS=',' read F1 F2 <<< "${F2}"
 		} || {
 			break
@@ -93,7 +126,6 @@ spider(){
 
 			wget "${link}" -O "audio_${contagem}.mp3"
 			contagem=$((contagem+1))
-#			youtube-dl --audio-format mp3 "${down}"
 		done
 	}
 }
@@ -104,12 +136,21 @@ spider(){
 #deletar arquivo de lista caso tiver
 [[ -a list.txt ]] && rm -f list.txt
 
+#verificando se tem compactado gerado or este algoritmo:
+[[ -a pre_data.zip ]] && rm -f pre_data.zip
+
+#buscar compactados, e descompactar:
+for compactados in *.zip;do
+	unzip -j "${compactados}"
+	rm -rf "${compactados}"
+done
+
 #converter vídeos e demais formatos para .wav
 #e mover para o diretório wavs/
 #e deletar os originais
 echo -e "\n\nconvertendo, movendo e limpando ..."
 for audio in *;do
-	[[ "${audio}" =~ \.(oga|ogg|mp3|mp4|m4a|flac|raw) ]] && {
+	[[ "${audio}" =~ \.(oga|ogg|mp3|mp4|m4a|flac|raw|avi|mkv|ps) ]] && {
 		ffmpeg -i "${audio}" wavs/"${audio%%.*}.wav"
 		rm -f "${audio}"
 	}
