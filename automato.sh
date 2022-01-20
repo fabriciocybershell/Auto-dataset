@@ -44,6 +44,10 @@ baixar(){
 			contagem=$((contagem+1))
 		done
 	}
+
+	[[ "${F1}" =~ drive.*sharing ]] && {
+		youtube-dl "${F1}"
+	}
 }
 
 get_title(){
@@ -69,10 +73,10 @@ spider(){
 				#fazer o download do primeiro link, depois, repassar para a primeira variavel
 			    echo "analyzing 🔎 ..."
 
-			    [[ ${F1} = *"youtu"* ]] && {
+			    [[ ${F1} =~ (youtu|drive) ]] && {
 				    echo -e "\ndownloading ⬇️:${F1}, please wait ...\n"
 			        baixar
-					} 
+					}
 					[[ ${F1} = *"youtu"* ]] || {
 				      get_title
 				      [[ ${busca} && ${busca} =~ (youtub?e?|tidal|soundcloud|deezer|spotfy|apple) ]] && {
@@ -201,13 +205,17 @@ spider(){
 [[ ${5} -eq 2 ]] && {
 	#TRANSCREVER:
 
-
 	#verificando se tem compactado gerado or este algoritmo:
 	[[ -a pre_data.zip ]] && rm -f pre_data.zip
+
+	#verificar existência da pasta wavs:
+	[[ -a wavs ]] || mkdir wavs
 
 	echo -e "\n\n descompactando ..."
 	#buscar compactados, e descompactar:
 	for compactados in *.zip;do
+		echo "entrou, arquivo: ${compactados}"
+		[[ "${compactados}" = *"*.zip"* ]] && break
 		unzip -j "${compactados}" || {
 			echo -e "\n\n  um erro ocorreu com seu arquivo compactado ..."
 			exit
@@ -217,7 +225,7 @@ spider(){
 
 	#movendo arquivos
 	echo -e "\n\n movendo ..."
-	for audio in vocal*;do
+	for audio in *.wav;do
 		mv "${audio}" "wavs/${audio}"
 	done
 
@@ -225,37 +233,48 @@ spider(){
 	echo -e "\n\nreduzindo velocidade do som ..."
 	for audios in wavs/*;do 
 		[[ "${audios}" = *".wav"* ]] || {
-			ffmpeg -i "${audios}" "${audios%%.*}.wav"
-			sox "${audios%%.*}.wav" "${audios%%.*}_slow.wav" speed 0.85
+			ffmpeg -y -i "${audios}" "${audios%%.*}.wav"
 			rm -f "${audios}"
-		} || {
-			echo "nenhum audio na pasta wavs encontrada!"
-		}
+		} 
+
+		sox "${audios%%.*}.wav" "${audios%%.*}_slow.wav" speed 0.85
 	done
 
 	#primeiro, ele irá converter os audios em uma forma que a google entenda:
-	for audio in audio/*wav;do
-		ffmpeg -i wavs/${audio} -r 48k wavs/${audio%%.*}.flac
+	echo -e "\n\nconvertendo de slow.wav para slow.flac ..."
+	for audio in wavs/*_slow.wav;do
+		ffmpeg -y -i "${audio}" -r 48k "${audio%%.*}.flac"
+		rm -f "${audio}"
 	done
 
 	#buscar arquivos convertidos, e aplicar silêncio neles.
-	for preparo in audio/*flac;do
-		sox ${preparo} "${preparo%.*}_silent.wav" pad 0.6 0.6
-		ffmpeg -y -i "${preparo%.*}.wav" "${preparo%.*}.flac"
-		rm -f "${preparo%.*}_silent.wav"
+	echo -e "\n\naplicando silêncio nos arquivos slow.flac ..."
+	for preparo in wavs/*.flac;do
+		sox ${preparo} "${preparo%%.*}_silent.flac" pad 0.6 0.6
+		rm -f "${preparo}"
+		mv "${preparo%%.*}_silent.flac" "${preparo}"
 	done
 
+	rm -rf wavs/*slow.wav
+
 	#transcrever
-	for envio in wavs/*flac;do
+	echo -e "\n\ntranscrevendo ..."
+	for envio in wavs/*.flac;do
 		transcricao=$(curl -s -X POST --data-binary @${envio} --user-agent 'Mozilla/5.0' --header 'Content-Type: audio/x-flac; rate=48000;' "https://www.google.com/speech-api/v2/recognize?output=json&lang=pt-BR&key=AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw&client=Mozilla/5.0" | jq '.result[].alternative[].transcript')
 		rm -f "${envio}" &
+
+		echo "${transcricao}"
 
 		while read linha;do
 			texto=${linha//\"/}
 		done <<< "${transcricao,,}"
 
-		echo "${envio%%.*}.wav|${texto:+$texto\.}" >> list.txt
-		rm -f "${envio%.*}_silent.wav"
+		echo "${envio%%_slow*}.wav|${texto:+$texto\.}"
+		[[ ${texto} ]] && {
+			echo "${envio%%_slow*}.wav|${texto:+$texto\.}" >> list.txt
+			printf " %s" "OK"
+		}
+
 	done
 
 	#gerar dataset: <----- DESATIVADO, para gerar o dataset conforme as transcrições
