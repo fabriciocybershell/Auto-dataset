@@ -276,9 +276,4 @@ spider(){
 		}
 
 	done
-
-	#gerar dataset: <----- DESATIVADO, para gerar o dataset conforme as transcrições
-	#for audios in wavs/*;do
-	#	echo "${audios}|" >> list.txt
-	#done
 }
