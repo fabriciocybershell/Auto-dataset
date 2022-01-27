@@ -202,7 +202,7 @@ spider(){
 	para continuar o restante!"
 }
 
-[[ ${5} -eq 2 ]] && {
+[[ ${5,,} =~ (false|true) ]] && {
 	#TRANSCREVER:
 
 	#verificando se tem compactado gerado or este algoritmo:
@@ -228,6 +228,15 @@ spider(){
 	for audio in *.wav;do
 		mv "${audio}" "wavs/${audio}"
 	done
+
+	[[ ${5,,} = "true" ]] && {
+		echo "gerando lista ..."
+		for envio in wavs/*;do
+			echo "${envio}|" >> list.txt
+		done
+		echo "lista gerada!"
+		exit
+	}
 
 	#reduzir a velocidade dos audios para melhor transcrição:
 	echo -e "\n\nreduzindo velocidade do som ..."
