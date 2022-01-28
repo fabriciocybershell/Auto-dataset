@@ -54,11 +54,12 @@ baixar(){
 			done <<< "${midia}"
 
 			wget "${link}" -O "audio_${contagem}.mp3"
-			contagem=$((contagem+1))
+			#contagem=$((contagem+1))
 		
 			#sinalizador:
 			echo 'a' > thread
 			)&
+			contagem=$((contagem+1))
 		done
 
 		#monitorando threads:
