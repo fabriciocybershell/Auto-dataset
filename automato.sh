@@ -191,11 +191,11 @@ spider(){
 		[[ "${audios}" = *"vocals.wav"* ]] || rm -f "${audios}"
 	done
 	mv wavs/reunido/vocals.wav wavs/
-	rm -r wavs/reunido/
+	rm -r wavs/reunido
 
 	#dividir audio longo na pasta:
 	echo -e "\n\nseparando vozes ..."
-	sox wavs/vocals.wav -r 22050 -c 1 -b 16 wavs/corte.wav silence -l 1 0.70 0.5% 1 0.070 0.5% : newfile : restart
+	sox wavs/vocals.wav -r 22050 -c 1 -b 16 wavs/corte.wav silence -l 1 0.50 0.5% 1 0.050 0.5% : newfile : restart
 	rm -f wavs/vocals.wav
 
 	zip -r pre_data.zip wavs/
@@ -209,7 +209,7 @@ spider(){
 	zip foi criado -> (pre_data.zip) estou baixando ele para você!
 
 	apague os que não forem do seu personagem, os que forem, mande 
-	novamente para o colab novamente, compactado ou solto \"mude o
+	novamente para o colab, compactado ou solto \"mude o
 	nome, o arquivo pre_data será deletado\", e assim que o fizer,
 	rode a próxima célula abaixo para continuar o restante!
 	============================================================================"
@@ -222,7 +222,6 @@ spider(){
 	[[ -a pre_data.zip ]] && rm -f pre_data.zip
 
 	#verificar existência da pasta wavs, e deletar arquivos de audios que estiverem internamente:
-	rm -r wavs/*
 	[[ -a wavs ]] || mkdir wavs
 
 	echo -e "\n\n descompactando ..."
