@@ -71,7 +71,6 @@ baixar(){
 			echo "${contagem}/${multi_thread} audios terminados ..."
 			[[ "$contagem" = "${multi_thread}" ]] && break
 		done
-
 	}
 
 	[[ "${F1}" =~ drive.*sharing ]] && {
@@ -214,7 +213,7 @@ spider(){
 		[[ "${audios}" = *"vocals.wav"* ]] || rm -f "${audios}"
 	done
 	mv wavs/reunido/vocals.wav wavs/
-	rm -r wavs/reunido
+	rm -rf wavs/reunido
 
 	#dividir audio longo na pasta:
 	echo -e "\n\nseparando vozes ..."
@@ -235,6 +234,10 @@ spider(){
 	novamente para o colab, compactado ou solto \"mude o
 	nome, o arquivo pre_data será deletado\", e assim que o fizer,
 	rode a próxima célula abaixo para continuar o restante!
+
+	OBS: tenha em vista que dependendo dos barulhos, não são removidos
+	direito, então terá alguns áudios apenas com sons estranhos, então
+	os remova também!
 	============================================================================"
 }
 
