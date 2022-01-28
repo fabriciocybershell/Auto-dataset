@@ -292,11 +292,10 @@ spider(){
 		done <<< "${transcricao,,}"
 
 		echo "${envio%%_slow*}.wav|${texto:+$texto\.}"
+		echo "${envio%%_slow*}.wav|${texto:+$texto\.}" >> list.txt
 		[[ ${texto} ]] && {
-			echo "${envio%%_slow*}.wav|${texto:+$texto\.}" >> list.txt
 			printf " %s" "OK"
 		}
-
 	done
 }
 
