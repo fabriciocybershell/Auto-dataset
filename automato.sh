@@ -68,6 +68,7 @@ baixar(){
 		do
 			soma=$(wc -l <<< "$(< thread)")
 			contagem=$((contagem+soma))
+			echo "${contagem}/${multi_thread} audios terminados ..."
 			[[ "$contagem" = "${multi_thread}" ]] && break
 		done
 
