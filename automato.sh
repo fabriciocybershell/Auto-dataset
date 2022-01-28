@@ -311,8 +311,6 @@ spider(){
 		transcricao=$(curl -s -X POST --data-binary @${envio} --user-agent 'Mozilla/5.0' --header 'Content-Type: audio/x-flac; rate=48000;' "https://www.google.com/speech-api/v2/recognize?output=json&lang=pt-BR&key=AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw&client=Mozilla/5.0" | jq '.result[].alternative[].transcript')
 		rm -f "${envio}" &
 
-#		echo "${transcricao}"
-
 		while read linha;do
 			texto=${linha//\"/}
 		done <<< "${transcricao,,}"
@@ -323,6 +321,24 @@ spider(){
 			printf " %s" "OK"
 		}
 	done
+	zip dataset.zip wavs/* list.txt
+
+	echo -e "\n
+	============================================================================
+	ALERTA IMPORTANTE!
+	os audios foram convertidos para mono, em 4450Khz e para 16 bits
+	(pode ser que aredonde para 32), um arquivo. 
+	um zip foi criado -> (dataset.zip), estou baixando ele para você!
+
+	agora ele vem acompanhado do arquivo list.txt onde você deve transcrever
+	as linhas que faltam ser transcritas, e os que ja possuirem transcrição,
+	você deve verificar e corrigir os erros de escrita e confusão de palavras!
+
+	OBS: você deve lembrar sempre que no final das suas transcrições, eles 
+	terminam com um destes caracteres: ,.!
+	============================================================================"
+}
+
 }
 
 #git clone 'https://github.com/lucassantilli/UVR-Colab-GUI' UVR_V5
