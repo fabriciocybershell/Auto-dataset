@@ -41,8 +41,13 @@ baixar(){
 			}
 		done < <(wget -qO- "https://youtube.com/playlist?list=${ID}" | tr ',' '\n')
 
+		multi_thread=${#videos[@]}
+		echo "total threads: ${multi_thread}"
+		[[ -a thread ]] || mkfifo thread
+
 		contagem=0
 		for video in ${videos[@]};do 
+			(
 			midia=$(youtube-dl --get-url "${video}")
 			while read linha;do
 				link="${linha}"
@@ -50,7 +55,21 @@ baixar(){
 
 			wget "${link}" -O "audio_${contagem}.mp3"
 			contagem=$((contagem+1))
+		
+			#sinalizador:
+			echo 'a' > thread
+			)&
 		done
+
+		#monitorando threads:
+		unset contagem
+		while :
+		do
+			soma=$(wc -l <<< "$(< thread)")
+			contagem=$((contagem+soma))
+			[[ "$contagem" = "${multi_thread}" ]] && break
+		done
+
 	}
 
 	[[ "${F1}" =~ drive.*sharing ]] && {
