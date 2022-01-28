@@ -2,7 +2,7 @@
 
 programs=(  sox spleeter ffmpeg jq  youtube-dl )
 for verificar in ${programs[@]};do
-	command -v ${verificar} || {
+	command -v ${verificar} 1>- || {
 		echo -e "programa ${verificar} não instalado\nrealizando instalação automática ..."
 		[[ ${verificar} =~ (sox|jq|ffmpeg) ]] && apt install ${verificar}
 		[[ ${verificar} =~ (spleeter|youtube-dl) ]] && pip install ${verificar}
@@ -173,8 +173,10 @@ spider(){
 
 	#buscar compactados, e descompactar:
 	for compactados in *.zip;do
-		unzip -j "${compactados}"
-		rm -rf "${compactados}"
+		[[ "${compacto}" = "*.zip" ]] || {
+			unzip -j "${compactados}"
+			rm -rf "${compactados}"
+		}
 	done
 
 	#converter vídeos e demais formatos para .wav
