@@ -1,7 +1,15 @@
 #! /bin/bash
 
-baixar(){
+programs=(  sox spleeter ffmpeg jq  youtube-dl )
+for verificar in ${programs[@]};do
+	command -v ${verificar} || {
+		echo -e "programa ${verificar} não instalado\nrealizando instalação automática ..."
+		[[ ${verificar} =~ (sox|jq|ffmpeg) ]] && apt install ${verificar}
+		[[ ${verificar} =~ (spleeter|youtube-dl) ]] && pip install ${verificar}
+	}
+done
 
+baixar(){
 	#coletar ID
 	[[ "${F1}" =~ /(watch|playlist)\?(v|list)=([a-zA-Z0-9_-]+) ]]
 	ID="${BASH_REMATCH[3]}"
@@ -97,7 +105,7 @@ spider(){
 		done
 	}
 
-	[[ ${2} && ${3} ]] && {
+	[[ ${2} && ${3} && ${4} -ge 1 ]] && {
 		[[ "${2,,}" = "seriado" ]] && busca="cenas iconicas compilado ${3}"
 		[[ "${2,,}" = "filme" ]] && busca="cenas frases trainler compilado ${3}"
 		[[ "${2,,}" =~ (desenho|seriado) ]] && busca="episodios mensagens cenas ${3}"
@@ -153,12 +161,12 @@ spider(){
 	#e deletar os originais
 	echo -e "\n\nconvertendo, movendo e limpando ..."
 	for audio in *;do
-		[[ "${audio}" =~ \.(oga|ogg|mp3|mp4|m4a|flac|raw|avi|mkv|ps) ]] && {
-			ffmpeg -i "${audio}" wavs/"${audio%%.*}.wav"
+		[[ "${audio}" =~ \.(oga|ogg|opus|mp3|mp4|m4a|mpeg|flac|raw|avi|mkv|ps|aac|wma|mp2|aiff) ]] && {
+			ffmpeg -i "${audio}" "wavs/${audio%%.*}.wav"
 			rm -f "${audio}"
 		}
 		[[ "${audio}" = *".wav"* ]] && {
-			mv "${audio}" "wavs/${audio}"
+			mv "${audio}" "wavs/${audio// /\_}"
 			rm -f "${audio}"
 		}
 
@@ -169,7 +177,7 @@ spider(){
 	for audios in wavs/*;do
 		array+=( "${audios}" )
 	done
-	sox ${array[@]} wavs/reunido.wav
+	sox ${array[@]} "wavs/reunido.wav"
 	rm -f ${array[*]}
 	#caso o de cima não funcionar
 	for audios in wavs/*;do
@@ -187,19 +195,24 @@ spider(){
 
 	#dividir audio longo na pasta:
 	echo -e "\n\nseparando vozes ..."
-	sox wavs/vocals.wav wavs/personagem.wav silence -l 1 0.70 0.5% 1 0.070 0.5% : newfile : restart
+	sox wavs/vocals.wav -r 22050 -c 1 -b 16 wavs/corte.wav silence -l 1 0.70 0.5% 1 0.070 0.5% : newfile : restart
 	rm -f wavs/vocals.wav
 
 	zip -r pre_data.zip wavs/
 
 	rm -r wavs/*
 
-	echo -e "\n\nALERTA IMPORTANTE!
+	echo -e "\n
+	============================================================================
+	ALERTA IMPORTANTE!
 	no momento, todos os audios foram separados, um arquivo
-	zip foi criado -> (pre_data.zip) para você baixar com os audios cortados, apague os 
-	que não forem do seu personagem, os que forem, mande novamente para a
-	pasta wavs depois e assim que o fizer, rode a próxima célula abaixo
-	para continuar o restante!"
+	zip foi criado -> (pre_data.zip) estou baixando ele para você!
+
+	apague os que não forem do seu personagem, os que forem, mande 
+	novamente para o colab novamente, compactado ou solto \"mude o
+	nome, o arquivo pre_data será deletado\", e assim que o fizer,
+	rode a próxima célula abaixo para continuar o restante!
+	============================================================================"
 }
 
 [[ ${5,,} =~ (false|true) ]] && {
@@ -208,7 +221,8 @@ spider(){
 	#verificando se tem compactado gerado or este algoritmo:
 	[[ -a pre_data.zip ]] && rm -f pre_data.zip
 
-	#verificar existência da pasta wavs:
+	#verificar existência da pasta wavs, e deletar arquivos de audios que estiverem internamente:
+	rm -r wavs/*
 	[[ -a wavs ]] || mkdir wavs
 
 	echo -e "\n\n descompactando ..."
@@ -244,7 +258,7 @@ spider(){
 		[[ "${audios}" = *".wav"* ]] || {
 			ffmpeg -y -i "${audios}" "${audios%%.*}.wav"
 			rm -f "${audios}"
-		} 
+		}
 
 		sox "${audios%%.*}.wav" "${audios%%.*}_slow.wav" speed 0.85
 	done
@@ -272,7 +286,7 @@ spider(){
 		transcricao=$(curl -s -X POST --data-binary @${envio} --user-agent 'Mozilla/5.0' --header 'Content-Type: audio/x-flac; rate=48000;' "https://www.google.com/speech-api/v2/recognize?output=json&lang=pt-BR&key=AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw&client=Mozilla/5.0" | jq '.result[].alternative[].transcript')
 		rm -f "${envio}" &
 
-		echo "${transcricao}"
+#		echo "${transcricao}"
 
 		while read linha;do
 			texto=${linha//\"/}
@@ -286,3 +300,8 @@ spider(){
 
 	done
 }
+
+#git clone 'https://github.com/lucassantilli/UVR-Colab-GUI' UVR_V5
+#pip install -r UVR_V5/requirements.txt
+#wget 'https://github.com/lucassantilli/UVR-Colab-GUI/releases/download/m5.1/HP2-MAIN-MSB2-3BAND-3090.pth'
+#cd UVR_V5/;python3 inference.py -i "/content/teste.mp3" -P "/content/HP2-MAIN-MSB2-3BAND-3090.pth" -g 0 -m "modelparams/3band_44100.json" -n 537238KB -w 320 -t -H mirroring -A 0.2
