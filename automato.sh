@@ -174,7 +174,7 @@ spider(){
 	for compactados in *.zip;do
 		[[ "${compacto}" = "*.zip" ]] || {
 			unzip -j "${compactados}"
-			rm -rf "${compactados}"
+			rm -rf "${compactados}" 1>-
 		}
 	done
 
@@ -184,12 +184,12 @@ spider(){
 	echo -e "\n\nconvertendo, movendo e limpando ..."
 	for audio in *;do
 		[[ "${audio}" =~ \.(oga|ogg|opus|mp3|mp4|m4a|mpeg|flac|raw|avi|mkv|ps|aac|wma|mp2|aiff) ]] && {
-			ffmpeg -i "${audio}" "wavs/${audio%%.*}.wav"
-			rm -f "${audio}"
+			ffmpeg -i "${audio}" "wavs/${audio%%.*}.wav" 1>-
+			rm -f "${audio}" 1>-
 		}
 		[[ "${audio}" = *".wav"* ]] && {
 			mv "${audio}" "wavs/${audio// /\_}"
-			rm -f "${audio}"
+			rm -f "${audio}" 1>-
 		}
 
 	done
@@ -199,30 +199,30 @@ spider(){
 	for audios in wavs/*;do
 		array+=( "${audios}" )
 	done
-	sox ${array[@]} "wavs/reunido.wav"
-	rm -f ${array[*]}
+	sox ${array[@]} "wavs/reunido.wav" 1>-
+	rm -f ${array[*]} 1>-
 	#caso o de cima não funcionar
 	for audios in wavs/*;do
-		[[ "${audios}" = *"reunido.wav"* ]] || rm -f "${audios}"
+		[[ "${audios}" = *"reunido.wav"* ]] || rm -f "${audios}" 1>-
 	done
 
 	#remover ruídos com spleeter
 	spleeter separate -o wavs/ wavs/reunido.wav
 	rm -f wavs/reunido/accompaniment.wav
 	for audios in wavs/*;do
-		[[ "${audios}" = *"vocals.wav"* ]] || rm -f "${audios}"
+		[[ "${audios}" = *"vocals.wav"* ]] || rm -f "${audios}" 1>-
 	done
-	mv wavs/reunido/vocals.wav wavs/
-	rm -rf wavs/reunido
+	mv wavs/reunido/vocals.wav wavs/ 1>-
+	rm -rf wavs/reunido 1>-
 
 	#dividir audio longo na pasta:
 	echo -e "\n\nseparando vozes ..."
-	sox wavs/vocals.wav -r 22050 -c 1 -b 16 wavs/corte.wav silence -l 1 0.50 0.5% 1 0.050 0.5% : newfile : restart
-	rm -f wavs/vocals.wav
+	sox wavs/vocals.wav -r 22050 -c 1 -b 16 wavs/corte.wav silence -l 1 0.50 0.5% 1 0.050 0.5% : newfile : restart 1>-
+	rm -f wavs/vocals.wav 1>-
 
 	zip -r pre_data.zip wavs/
 
-	rm -r wavs/*
+	rm -r wavs/* 1>-
 
 	echo -e "\n
 	============================================================================
@@ -259,13 +259,13 @@ spider(){
 			echo -e "\n\n  um erro ocorreu com seu arquivo compactado ..."
 			exit
 		}
-		rm -rf "${compactados}"
+		rm -rf "${compactados}" 1>-
 	done
 
 	#movendo arquivos
 	echo -e "\n\n movendo ..."
 	for audio in *.wav;do
-		mv "${audio}" "wavs/${audio}"
+		mv "${audio}" "wavs/${audio}" 1>-
 	done
 
 	[[ ${5,,} = "true" ]] && {
@@ -281,26 +281,26 @@ spider(){
 	echo -e "\n\nreduzindo velocidade do som ..."
 	for audios in wavs/*;do 
 		[[ "${audios}" = *".wav"* ]] || {
-			ffmpeg -y -i "${audios}" "${audios%%.*}.wav"
-			rm -f "${audios}"
+			ffmpeg -y -i "${audios}" "${audios%%.*}.wav" 1>-
+			rm -f "${audios}" 1>-
 		}
 
-		sox "${audios%%.*}.wav" "${audios%%.*}_slow.wav" speed 0.85
+		sox "${audios%%.*}.wav" "${audios%%.*}_slow.wav" speed 0.85 1>-
 	done
 
 	#primeiro, ele irá converter os audios em uma forma que a google entenda:
 	echo -e "\n\nconvertendo de slow.wav para slow.flac ..."
 	for audio in wavs/*_slow.wav;do
-		ffmpeg -y -i "${audio}" -r 48k "${audio%%.*}.flac"
-		rm -f "${audio}"
+		ffmpeg -y -i "${audio}" -r 48k "${audio%%.*}.flac" 1>-
+		rm -f "${audio}" 1>-
 	done
 
 	#buscar arquivos convertidos, e aplicar silêncio neles.
 	echo -e "\n\naplicando silêncio nos arquivos slow.flac ..."
 	for preparo in wavs/*.flac;do
-		sox ${preparo} "${preparo%%.*}_silent.flac" pad 0.6 0.6
-		rm -f "${preparo}"
-		mv "${preparo%%.*}_silent.flac" "${preparo}"
+		sox ${preparo} "${preparo%%.*}_silent.flac" pad 0.6 0.6 1>-
+		rm -f "${preparo}" 1>-
+		mv "${preparo%%.*}_silent.flac" "${preparo}" 1>-
 	done
 
 	rm -rf wavs/*slow.wav
@@ -309,7 +309,7 @@ spider(){
 	echo -e "\n\ntranscrevendo ..."
 	for envio in wavs/*.flac;do
 		transcricao=$(curl -s -X POST --data-binary @${envio} --user-agent 'Mozilla/5.0' --header 'Content-Type: audio/x-flac; rate=48000;' "https://www.google.com/speech-api/v2/recognize?output=json&lang=pt-BR&key=AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw&client=Mozilla/5.0" | jq '.result[].alternative[].transcript')
-		rm -f "${envio}" &
+		rm -f "${envio}" & 1>-
 
 		while read linha;do
 			texto=${linha//\"/}
@@ -337,8 +337,6 @@ spider(){
 	OBS: você deve lembrar sempre que no final das suas transcrições, eles 
 	terminam com um destes caracteres: ,.!
 	============================================================================"
-}
-
 }
 
 #git clone 'https://github.com/lucassantilli/UVR-Colab-GUI' UVR_V5
