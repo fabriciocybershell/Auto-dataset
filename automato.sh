@@ -9,6 +9,8 @@ for verificar in ${programs[@]};do
 	}
 done
 
+[[ -a thread ]] || mkfifo thread
+
 baixar(){
 	#coletar ID
 	[[ "${F1}" =~ /(watch|playlist)\?(v|list)=([a-zA-Z0-9_-]+) ]]
@@ -45,7 +47,6 @@ baixar(){
 
 		multi_thread=${#videos[@]}
 		echo "total threads: ${multi_thread}"
-		[[ -a thread ]] || mkfifo thread
 
 		echo "modo: HIPERBOOST!"
 
@@ -225,7 +226,9 @@ spider(){
 	#listar e unir todos em um só, e deletar todos os demais
 	echo -e "\n\nunindo ..."
 	for audios in wavs/*;do
-		array+=( "${audios}" )
+		[[ "${audios}" = 'wavs/*' ]] || {
+			array+=( "${audios}" )
+		}
 	done
 
 	sox ${array[@]} "wavs/reunido.wav" 1>&-
