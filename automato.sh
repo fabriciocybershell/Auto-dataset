@@ -47,6 +47,8 @@ baixar(){
 		echo "total threads: ${multi_thread}"
 		[[ -a thread ]] || mkfifo thread
 
+		echo "modo: HIPERBOOST!"
+
 		contagem=0
 		for video in ${videos[@]};do 
 			(
@@ -187,24 +189,43 @@ spider(){
 	#e mover para o diretório wavs/
 	#e deletar os originais
 	echo -e "\n\nconvertendo, movendo e limpando ..."
+	echo "modo: HIPERBOOST!"
+
+	contagem=0
+	multi_thread=0
 	for audio in *;do
 		[[ "${audio}" =~ \.(webm|oga|ogg|opus|mp3|mp4|m4a|mpeg|flac|raw|avi|mkv|ps|aac|wma|mp2|aiff) ]] && {
-			ffmpeg -y -i "${audio}" "wavs/${audio%%.*}.wav" 1>&-
+		(
+			name="wavs/${audio%%\[*}.wav"
+			ffmpeg -y -i "${audio}" -ar 44100 "${name// /\_}" 2>&-
 			rm -f "${audio}"  1>&-
+			#cinalera
+			echo 'a' > thread
+		)&
+			contagem=$((contagem+1))
 		}
 		[[ "${audio}" = *".wav"* ]] && {
 			mv "${audio}" "wavs/${audio// /\_}"
 			rm -f "${audio}" 1>&-
 		}
+	done
 
+	multi_thread=${contagem}
+
+	#monitorando threads:
+	unset contagem
+	while :
+	do
+		soma=$(wc -l <<< "$(< thread)")
+		contagem=$((contagem+soma))
+		echo "${contagem}/${multi_thread} conversões terminadas ..."
+		[[ "$contagem" = "${multi_thread}" ]] && break
 	done
 
 	#listar e unir todos em um só, e deletar todos os demais
 	echo -e "\n\nunindo ..."
 	for audios in wavs/*;do
-		[[ "${audios}" = 'wavs/*' ]] || {
-			array+=( "${audios}" )
-		}
+		array+=( "${audios}" )
 	done
 
 	sox ${array[@]} "wavs/reunido.wav" 1>&-
