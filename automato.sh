@@ -1,11 +1,11 @@
 #! /bin/bash
 
-programs=(  sox spleeter ffmpeg jq  youtube-dl )
+programs=(  sox spleeter ffmpeg jq  yt-dlp )
 for verificar in ${programs[@]};do
-	command -v ${verificar} 1>- || {
+	command -v ${verificar} 1>&- || {
 		echo -e "programa ${verificar} não instalado\nrealizando instalação automática ..."
 		[[ ${verificar} =~ (sox|jq|ffmpeg) ]] && apt install ${verificar}
-		[[ ${verificar} =~ (spleeter|youtube-dl) ]] && pip install ${verificar}
+		[[ ${verificar} =~ (spleeter|yt-dlp) ]] && pip install ${verificar}
 	}
 done
 
@@ -19,12 +19,14 @@ baixar(){
 #  [[ "${TIPO}" = "playlist" ]] && echo "https://www.youtube.com/playlist?list=${ID}"
 
 	[[ "${TIPO}" = "watch" ]] && {
-		midia=$(youtube-dl --get-url "https://www.youtube.com/watch?v=${ID}")
-		while read linha;do
-			link="${linha}"
-		done <<< "${midia}"
+		#midia=$(youtube-dl --get-url "https://www.youtube.com/watch?v=${ID}")
+		#while read linha;do
+		#	link="${linha}"
+		#done <<< "${midia}"
 
-		wget "${link}" -O "audio_${contagem}.mp3"
+		yt-dlp "https://www.youtube.com/watch?v=${ID}"
+
+		#wget "${link}" -O "audio_${contagem}.mp3"
 	}
 
 	[[ "${TIPO}" = "playlist" ]] && {
@@ -48,12 +50,13 @@ baixar(){
 		contagem=0
 		for video in ${videos[@]};do 
 			(
-			midia=$(youtube-dl --get-url "${video}")
-			while read linha;do
-				link="${linha}"
-			done <<< "${midia}"
+#			midia=$(youtube-dl --get-url "${video}")
+#			while read linha;do
+#				link="${linha}"
+#			done <<< "${midia}"
 
-			wget "${link}" -O "audio_${contagem}.mp3"
+			yt-dlp "${video}"
+#			wget "${link}" -O "audio_${contagem}.mp3"
 			#contagem=$((contagem+1))
 		
 			#sinalizador:
@@ -74,7 +77,8 @@ baixar(){
 	}
 
 	[[ "${F1}" =~ drive.*sharing ]] && {
-		youtube-dl "${F1}"
+		yt-dlp "${F1}"
+		#youtube-dl "${F1}"
 	}
 }
 
@@ -149,13 +153,14 @@ spider(){
 			contagem=0
 
 			for down in ${videos[@]};do
-		    midia=$(youtube-dl --get-url "${down}")
+#		    midia=$(youtube-dl --get-url "${down}")
 
-				while read linha;do
-					link="${linha}"
-				done <<< "${midia}"
+#				while read linha;do
+#					link="${linha}"
+#				done <<< "${midia}"
 
-				wget "${link}" -O "audio_${contagem}.mp3"
+#				wget "${link}" -O "audio_${contagem}.mp3"
+				yt-dlp "${down}"
 				contagem=$((contagem+1))
 			done
 		}
@@ -172,9 +177,9 @@ spider(){
 
 	#buscar compactados, e descompactar:
 	for compactados in *.zip;do
-		[[ "${compacto}" = "*.zip" ]] || {
-			unzip -j "${compactados}"
-			rm -rf "${compactados}" 1>-
+		[[ "${compacto}" = '*.zip' || ${compacto} ]] || {
+			unzip -j "${compactados}" 1>&-
+			rm -rf "${compactados}"  1>&-
 		}
 	done
 
@@ -183,13 +188,13 @@ spider(){
 	#e deletar os originais
 	echo -e "\n\nconvertendo, movendo e limpando ..."
 	for audio in *;do
-		[[ "${audio}" =~ \.(oga|ogg|opus|mp3|mp4|m4a|mpeg|flac|raw|avi|mkv|ps|aac|wma|mp2|aiff) ]] && {
-			ffmpeg -i "${audio}" "wavs/${audio%%.*}.wav" 1>-
-			rm -f "${audio}" 1>-
+		[[ "${audio}" =~ \.(webm|oga|ogg|opus|mp3|mp4|m4a|mpeg|flac|raw|avi|mkv|ps|aac|wma|mp2|aiff) ]] && {
+			ffmpeg -y -i "${audio}" "wavs/${audio%%.*}.wav" 1>&-
+			rm -f "${audio}"  1>&-
 		}
 		[[ "${audio}" = *".wav"* ]] && {
 			mv "${audio}" "wavs/${audio// /\_}"
-			rm -f "${audio}" 1>-
+			rm -f "${audio}" 1>&-
 		}
 
 	done
@@ -197,32 +202,35 @@ spider(){
 	#listar e unir todos em um só, e deletar todos os demais
 	echo -e "\n\nunindo ..."
 	for audios in wavs/*;do
-		array+=( "${audios}" )
+		[[ "${audios}" = 'wavs/*' ]] || {
+			array+=( "${audios}" )
+		}
 	done
-	sox ${array[@]} "wavs/reunido.wav" 1>-
-	rm -f ${array[*]} 1>-
+
+	sox ${array[@]} "wavs/reunido.wav" 1>&-
+	rm -f ${array[*]} 1>&-
 	#caso o de cima não funcionar
 	for audios in wavs/*;do
-		[[ "${audios}" = *"reunido.wav"* ]] || rm -f "${audios}" 1>-
+		[[ "${audios}" = *"reunido.wav"* ]] || rm -f "${audios}" 1>&-
 	done
 
 	#remover ruídos com spleeter
 	spleeter separate -o wavs/ wavs/reunido.wav
 	rm -f wavs/reunido/accompaniment.wav
 	for audios in wavs/*;do
-		[[ "${audios}" = *"vocals.wav"* ]] || rm -f "${audios}" 1>-
+		[[ "${audios}" = *"vocals.wav"* ]] || rm -f "${audios}" 1>&-
 	done
-	mv wavs/reunido/vocals.wav wavs/ 1>-
-	rm -rf wavs/reunido 1>-
+	mv wavs/reunido/vocals.wav wavs/ 1>&-
+	rm -rf wavs/reunido 1>&-
 
 	#dividir audio longo na pasta:
 	echo -e "\n\nseparando vozes ..."
-	sox wavs/vocals.wav -r 22050 -c 1 -b 16 wavs/corte.wav silence -l 1 0.50 0.5% 1 0.050 0.5% : newfile : restart 1>-
-	rm -f wavs/vocals.wav 1>-
+	sox wavs/vocals.wav -r 22050 -c 1 -b 16 wavs/corte.wav silence -l 1 0.50 0.5% 1 0.050 0.5% : newfile : restart 1>&-
+	rm -f wavs/vocals.wav 1>&-
 
 	zip -r pre_data.zip wavs/
 
-	rm -r wavs/* 1>-
+	rm -r wavs/* 1>&-
 
 	echo -e "\n
 	============================================================================
@@ -259,13 +267,13 @@ spider(){
 			echo -e "\n\n  um erro ocorreu com seu arquivo compactado ..."
 			exit
 		}
-		rm -rf "${compactados}" 1>-
+		rm -rf "${compactados}" 1>&-
 	done
 
 	#movendo arquivos
 	echo -e "\n\n movendo ..."
 	for audio in *.wav;do
-		mv "${audio}" "wavs/${audio}" 1>-
+		mv "${audio}" "wavs/${audio}" 1>&-
 	done
 
 	[[ ${5,,} = "true" ]] && {
@@ -281,26 +289,26 @@ spider(){
 	echo -e "\n\nreduzindo velocidade do som ..."
 	for audios in wavs/*;do 
 		[[ "${audios}" = *".wav"* ]] || {
-			ffmpeg -y -i "${audios}" "${audios%%.*}.wav" 1>-
-			rm -f "${audios}" 1>-
+			ffmpeg -y -i "${audios}" "${audios%%.*}.wav" 1>&-
+			rm -f "${audios}" 1>&-
 		}
 
-		sox "${audios%%.*}.wav" "${audios%%.*}_slow.wav" speed 0.85 1>-
+		sox "${audios%%.*}.wav" "${audios%%.*}_slow.wav" speed 0.85 1>&-
 	done
 
 	#primeiro, ele irá converter os audios em uma forma que a google entenda:
 	echo -e "\n\nconvertendo de slow.wav para slow.flac ..."
 	for audio in wavs/*_slow.wav;do
-		ffmpeg -y -i "${audio}" -r 48k "${audio%%.*}.flac" 1>-
-		rm -f "${audio}" 1>-
+		ffmpeg -y -i "${audio}" -r 48k "${audio%%.*}.flac" 1>&-
+		rm -f "${audio}" 1>&-
 	done
 
 	#buscar arquivos convertidos, e aplicar silêncio neles.
 	echo -e "\n\naplicando silêncio nos arquivos slow.flac ..."
 	for preparo in wavs/*.flac;do
-		sox ${preparo} "${preparo%%.*}_silent.flac" pad 0.6 0.6 1>-
-		rm -f "${preparo}" 1>-
-		mv "${preparo%%.*}_silent.flac" "${preparo}" 1>-
+		sox ${preparo} "${preparo%%.*}_silent.flac" pad 0.6 0.6 1>&-
+		rm -f "${preparo}" 1>&-
+		mv "${preparo%%.*}_silent.flac" "${preparo}" 1>&-
 	done
 
 	rm -rf wavs/*slow.wav
@@ -308,8 +316,8 @@ spider(){
 	#transcrever
 	echo -e "\n\ntranscrevendo ..."
 	for envio in wavs/*.flac;do
-		transcricao=$(curl -s -X POST --data-binary @${envio} --user-agent 'Mozilla/5.0' --header 'Content-Type: audio/x-flac; rate=48000;' "https://www.google.com/speech-api/v2/recognize?output=json&lang=pt-BR&key=AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw&client=Mozilla/5.0" | jq '.result[].alternative[].transcript')
-		rm -f "${envio}" & 1>-
+		transcricao=$(curl -s -X POST --data-binary @"${envio}" --user-agent 'Mozilla/5.0' --header 'Content-Type: audio/x-flac; rate=48000;' "https://www.google.com/speech-api/v2/recognize?output=json&lang=pt-BR&key=AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw&client=Mozilla/5.0" | jq '.result[].alternative[].transcript')
+		rm -f "${envio}" & 1>&-
 
 		while read linha;do
 			texto=${linha//\"/}
