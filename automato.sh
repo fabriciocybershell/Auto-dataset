@@ -300,11 +300,24 @@ spider(){
 		mv "${audio}" "wavs/${audio}" 1>&-
 	done
 
+	#avaliar os que passam de 8 segundos de audio:
+	for audio in wavs/*;do
+		[[ "$(sox --i ${audio})" =~ ([0-9]{2}\:){2}[0-9]{2}\.[0-9]{2} ]] && {
+			IFS=':' read F1 F2 F3 <<< "${BASH_REMATCH[0]%%.*}"
+			[[ ${F3} > 18 ]] && {
+				echo "audio ${audio} possui ${BASH_REMATCH[0]} de duração."
+				echo "a remover ..."
+				rm -rf "${audio}"
+			}
+		}
+	done
+
 	[[ ${5,,} = "true" ]] && {
 		echo "gerando lista ..."
 		for envio in wavs/*;do
 			echo "${envio}|" >> list.txt
 		done
+		sed -i '/^\s*$/d' list.txt
 		echo "lista gerada!"
 		exit
 	}
@@ -375,3 +388,7 @@ spider(){
 #pip install -r UVR_V5/requirements.txt
 #wget 'https://github.com/lucassantilli/UVR-Colab-GUI/releases/download/m5.1/HP2-MAIN-MSB2-3BAND-3090.pth'
 #cd UVR_V5/;python3 inference.py -i "/content/teste.mp3" -P "/content/HP2-MAIN-MSB2-3BAND-3090.pth" -g 0 -m "modelparams/3band_44100.json" -n 537238KB -w 320 -t -H mirroring -A 0.2
+
+
+# while IFS='|' read F1 F2;do [[ ${F2} ]] || echo "linha vazia, audio: ${F1}"; done < list.txt
+# while IFS='|' read F1 F2;do [[ ${F2} =~ (\.|\!|\?) ]] || echo "sem terminador, audio: ${F1}"; done < list.txt
