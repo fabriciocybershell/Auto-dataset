@@ -100,7 +100,7 @@ spider(){
 
 [[ ${5} -eq 1 ]] && {
 	[[ ${1} ]] && {
-		IFS=',' read F1 F2 <<< "${1}"
+		IFS=',' read F1 F2 <<< "${1// /}"
 		while :
 		do
 			#verificar variavel, se vazia, pular
