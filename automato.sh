@@ -130,6 +130,7 @@ spider(){
 				IFS=',' read F1 F2 <<< "${F2}"
 			} || break
 		done
+		#botar threads aqui -----------------------------------------------------------
 	}
 
 	[[ ${2} && ${3} && ${4} -ge 1 ]] && {
@@ -156,13 +157,6 @@ spider(){
 			contagem=0
 
 			for down in ${videos[@]};do
-#		    midia=$(youtube-dl --get-url "${down}")
-
-#				while read linha;do
-#					link="${linha}"
-#				done <<< "${midia}"
-
-#				wget "${link}" -O "audio_${contagem}.mp3"
 				yt-dlp "${down}"
 				contagem=$((contagem+1))
 			done
@@ -231,7 +225,7 @@ spider(){
 		}
 	done
 
-	sox ${array[@]} "wavs/reunido.wav" 1>&-
+	sox ${array[@]} "wavs/reunido.wav" norm -0.1 1>&-
 	rm -f ${array[*]} 1>&-
 	#caso o de cima não funcionar
 	for audios in wavs/*;do
@@ -249,7 +243,7 @@ spider(){
 
 	#dividir audio longo na pasta:
 	echo -e "\n\nseparando vozes ..."
-	sox wavs/vocals.wav -r 22050 -c 1 -b 16 wavs/corte.wav silence -l 1 0.50 0.5% 1 0.050 0.5% : newfile : restart 1>&-
+	sox wavs/vocals.wav -r 22050 -c 1 -b 16 wavs/corte.wav norm -0.1 silence -l 1 0.50 0.5% 1 0.050 0.5% : newfile : restart 1>&-
 	rm -f wavs/vocals.wav 1>&-
 
 	zip -r pre_data.zip wavs/
@@ -383,12 +377,3 @@ spider(){
 	terminam com um destes caracteres: ,.!
 	============================================================================"
 }
-
-#git clone 'https://github.com/lucassantilli/UVR-Colab-GUI' UVR_V5
-#pip install -r UVR_V5/requirements.txt
-#wget 'https://github.com/lucassantilli/UVR-Colab-GUI/releases/download/m5.1/HP2-MAIN-MSB2-3BAND-3090.pth'
-#cd UVR_V5/;python3 inference.py -i "/content/teste.mp3" -P "/content/HP2-MAIN-MSB2-3BAND-3090.pth" -g 0 -m "modelparams/3band_44100.json" -n 537238KB -w 320 -t -H mirroring -A 0.2
-
-
-# while IFS='|' read F1 F2;do [[ ${F2} ]] || echo "linha vazia, audio: ${F1}"; done < list.txt
-# while IFS='|' read F1 F2;do [[ ${F2} =~ (\.|\!|\?) ]] || echo "sem terminador, audio: ${F1}"; done < list.txt
