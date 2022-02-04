@@ -192,7 +192,7 @@ spider(){
 		[[ "${audio}" =~ \.(webm|oga|ogg|opus|mp3|mp4|m4a|mpeg|flac|raw|avi|mkv|ps|aac|wma|mp2|aiff) ]] && {
 		(
 			name="wavs/${audio%%\[*}.wav"
-			ffmpeg -y -i "${audio}" -ar 44100 "${name// /\_}" 2>&-
+			ffmpeg -y -i "${audio}" -ac 1 -ar 44100 "${name// /\_}" 2>&-
 			rm -f "${audio}"  1>&-
 			#cinalera
 			echo 'a' > thread
@@ -225,7 +225,7 @@ spider(){
 		}
 	done
 
-	sox ${array[@]} "wavs/reunido.wav" -S norm -0.1
+	sox ${array[@]} -c 1 "wavs/reunido.wav" norm -0.1 1>&-
 	rm -f ${array[*]} 1>&-
 	#caso o de cima não funcionar
 	for audios in wavs/*;do
