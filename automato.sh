@@ -385,19 +385,3 @@ spider(){
 	terminam com um destes caracteres: ,.!
 	============================================================================"
 }
-
-#git clone 'https://github.com/lucassantilli/UVR-Colab-GUI' UVR_V5
-#pip install -r UVR_V5/requirements.txt
-#wget 'https://github.com/lucassantilli/UVR-Colab-GUI/releases/download/m5.1/HP2-MAIN-MSB2-3BAND-3090.pth'
-#cd UVR_V5/;python3 inference.py -i "/content/teste.mp3" -P "/content/HP2-MAIN-MSB2-3BAND-3090.pth" -g 0 -m "modelparams/3band_44100.json" -n 537238KB -w 320 -t -H mirroring -A 0.2
-
-# while IFS='|' read F1 F2;do [[ ${F2} ]] || echo "linha vazia, audio: ${F1}"; done < list.txt
-# while IFS='|' read F1 F2;do [[ ${F2} =~ (\.|\!|\?) ]] || echo "sem terminador, audio: ${F1}"; done < list.txt
-
-#for audio in *;do
-#	sox "${audio}" -r 22050 -c 1 -b 16 "${audio%%.*}_modify.wav"
-#	rm "${audio}"
-#	mv "${audio%%.*}_modify.wav" "${audio}"
-#done
-
-#sox file1 file1out norm -0.1
