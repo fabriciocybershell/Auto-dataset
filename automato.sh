@@ -247,7 +247,7 @@ spider(){
 
 	#dividir audio longo na pasta:
 	echo -e "\n\nseparando vozes ..."
-	sox wavs/vocals.wav -r 22050 -c 1 -b 16 wavs/corte.wav silence -l 1 0.50 0.5% 1 0.050 0.5% : newfile : restart 1>&-
+	sox wavs/vocals.wav -r 22050 -c 1 -b 16 wavs/corte.wav silence -l 1 0.100 0.1% 1 0.050 0.1% : newfile : restart 1>&-
 
 	echo "limpando arquivo original ..."
 	sleep 15s
