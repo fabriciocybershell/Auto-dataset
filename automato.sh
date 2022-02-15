@@ -1,5 +1,7 @@
 #! /bin/bash
 
+echo "analisando informações e verificando dependências, aguarde até terminar ..."
+
 programs=(  sox spleeter ffmpeg jq  yt-dlp )
 for verificar in ${programs[@]};do
 	command -v ${verificar} 1>&- || {
@@ -134,11 +136,11 @@ spider(){
 	}
 
 	[[ ${2} && ${3} && ${4} -ge 1 ]] && {
-		[[ "${2,,}" = "seriado" ]] && busca="cenas iconicas compilado ${3}"
-		[[ "${2,,}" = "filme" ]] && busca="cenas frases trainler compilado ${3}"
-		[[ "${2,,}" =~ (desenho|seriado) ]] && busca="episodios mensagens cenas ${3}"
-		[[ "${2,,}" = "youtuber" ]] && busca="${3}"
-		[[ "${2,,}" = "documentario" ]] && busca="episodio discover temporada ${3}"
+		[[ "${2,,}" =~ (seriado|1) ]] && busca="cenas iconicas compilado ${3}"
+		[[ "${2,,}" =~ (filme|2) ]] && busca="cenas frases trainler compilado ${3}"
+		[[ "${2,,}" =~ (desenho|seriado|4) ]] && busca="episodios mensagens cenas ${3}"
+		[[ "${2,,}" =~ (youtuber|3) ]] && busca="${3}"
+		[[ "${2,,}" =~ (documentario|5) ]] && busca="episodio discover temporada ${3}"
 
 		[[ ${busca} ]] && {
 			contagem=0
