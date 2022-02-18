@@ -15,14 +15,14 @@ done
 
 baixar(){
 	#coletar ID
-	[[ "${F1}" =~ /(watch|playlist)\?(v|list)=([a-zA-Z0-9_-]+) ]]
-	ID="${BASH_REMATCH[3]}"
+	[[ "${F1}" =~ /(watch|playlist|youtu\.be)(\?(v|list)=|\/)([a-zA-Z0-9_-]+) ]]
+	ID="${BASH_REMATCH[4]}"
 	TIPO="${BASH_REMATCH[1]}"
 
 #  [[ "${TIPO}" = "watch" ]] && echo "https://www.youtube.com/watch?v=${ID}"
 #  [[ "${TIPO}" = "playlist" ]] && echo "https://www.youtube.com/playlist?list=${ID}"
 
-	[[ "${TIPO}" = "watch" ]] && {
+	[[ "${TIPO}" =~ (watch|youtu\.be) ]] && {
 		#midia=$(youtube-dl --get-url "https://www.youtube.com/watch?v=${ID}")
 		#while read linha;do
 		#	link="${linha}"
@@ -50,7 +50,7 @@ baixar(){
 		multi_thread=${#videos[@]}
 		echo "total threads: ${multi_thread}"
 
-		echo "modo: HIPERBOOST!"
+		echo "modo: HIPERBOOST! 1"
 
 		contagem=0
 		for video in ${videos[@]};do 
@@ -159,7 +159,8 @@ spider(){
 			multi_thread=${#videos[@]}
 			echo "total threads: ${multi_thread}"
 
-			echo "modo: HIPERBOOST!"
+			echo "modo: HIPERBOOST! 2"
+
 
 			contagem=0
 
@@ -194,8 +195,9 @@ spider(){
 	[[ -a pre_data.zip ]] && rm -f pre_data.zip
 
 	#buscar compactados, e descompactar:
+
 	for compactados in *.zip;do
-		[[ "${compacto}" = '*.zip' || ${compacto} ]] || {
+		[[ "${compactados}" = '*.zip' || ${compactados} ]] || {
 			unzip -j "${compactados}" 1>&-
 			rm -rf "${compactados}"  1>&-
 		}
@@ -205,7 +207,7 @@ spider(){
 	#e mover para o diretório wavs/
 	#e deletar os originais
 	echo -e "\n\nconvertendo, movendo e limpando ..."
-	echo "modo: HIPERBOOST!"
+	echo "modo: HIPERBOOST! 3"
 
 	contagem=0
 	multi_thread=0
@@ -214,7 +216,7 @@ spider(){
 		(
 			name="wavs/${audio%%\[*}.wav"
 			ffmpeg -y -i "${audio}" -ac 1 -ar 44100 "${name// /\_}" 2>&-
-			rm -f "${audio}"  1>&-
+			rm -f "${audio}" 1>&-
 			#cinalera
 			echo 'a' > thread
 		)&
@@ -297,6 +299,76 @@ spider(){
 }
 
 [[ ${5,,} =~ (false|true) ]] && {
+
+[[ -a pre_data.zip ]] && unzip pre_data.zip
+
+for audio in wavs/*;do
+
+	file_id=''
+	arquivo=${audio##*/}
+	name_audio=${audio%%.*}
+
+	#convertendo o audio
+	ffmpeg -y -i wavs/$arquivo -r 48k ${name_audio}.flac
+
+	echo "convertido!"
+
+	#separando fragmentos
+	sox -V3 ${name_audio}.flac ${name_audio}_.flac silence -l  1 0.5 0.1% 1 0.3 0.1% : newfile : restart
+	rm -rf ${name_audio}.flac
+
+	echo "fragmentos separados"
+
+	texto=''
+
+	#buscar o último e deletar || ao mesmo tempo que edita para melhor transcrição
+	for envio in wavs/*.flac;do
+		sox  ${envio} "${envio}_xiu_inout.flac" pad 0.6 0.6
+		rm -rf "${envio}"
+	done
+
+	echo "silêncio adicionado!"
+
+	for envio in wavs/*.flac;do
+	echo "fazemdo request!"
+
+		transcricao=$(curl -s -X POST --data-binary @${envio} --user-agent 'Mozilla/5.0' --header 'Content-Type: audio/x-flac; rate=48000;' "https://www.google.com/speech-api/v2/recognize?output=json&lang=pt-BR&key=AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw&client=Mozilla/5.0" | jq '.result[].alternative[].transcript')
+		rm -f "${envio}" &
+
+		while read linha;do
+			texto=${linha//\"/}
+		done <<< "${transcricao,,}"
+
+		texto_final+=${texto:+$texto\,\ }
+	done
+
+	texto_final=${texto_final%\,*}
+
+	texto_final="${texto_final:+$texto_final.}"
+
+	#aplicando filtro de comandos:
+	texto_final=${texto_final//vírgula/\,}
+	texto_final=${texto_final// ponto final/\.}
+	texto_final=${texto_final// ponto interrogação/\?}
+	texto_final=${texto_final// ponto de interrogação/\?}
+	texto_final=${texto_final// dois pontos/\:}
+	texto_final=${texto_final// nova linha/\\n }
+	texto_final=${texto_final// novo paragrafo/\\n\\n   }
+	texto_final=${texto_final// paragrafo/\\n\\n   }
+	texto_final=${texto_final// abre aspas/\"}
+	texto_final=${texto_final// fecha aspas/\"}
+	texto_final=${texto_final// reticencias/\.\.\.}
+	texto_final=${texto_final//\,\,/\,}
+	texto_final=${texto_final//\.\./\.}
+
+	echo -e "forma final: \n${texto_final}"
+	[[ "${texto_final}" ]] && sleep 10s
+	unset texto_final
+done
+
+
+exit
+
 	#TRANSCREVER:
 
 	#verificando se tem compactado gerado or este algoritmo:
