@@ -156,12 +156,31 @@ spider(){
 
 			echo -e "\n${#videos[@]} vídeos no total ..."
 
+			multi_thread=${#videos[@]}
+			echo "total threads: ${multi_thread}"
+
+			echo "modo: HIPERBOOST!"
+
 			contagem=0
 
 			for down in ${videos[@]};do
-				yt-dlp "${down}"
+				(
+					yt-dlp "${down}"
+					echo 'a' > thread
+				)&
 				contagem=$((contagem+1))
 			done
+
+					#monitorando threads:
+			unset contagem
+			while :
+			do
+				soma=$(wc -l <<< "$(< thread)")
+				contagem=$((contagem+soma))
+				echo "${contagem}/${multi_thread} downloads terminados ..."
+				[[ "$contagem" = "${multi_thread}" ]] && break
+			done
+
 		}
 	}
 
