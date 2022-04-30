@@ -34,7 +34,7 @@ baixar(){
 	}
 
 	[[ "${TIPO}" = "playlist" ]] && {
-		echo "playlist detectada, realizando varreduras ..."
+		echo "playlist detectada, realizando varreduras ...\n"
 
 		contagem=1
 		while read linha;do
@@ -208,8 +208,8 @@ spider(){
 	#converter vídeos e demais formatos para .wav
 	#e mover para o diretório wavs/
 	#e deletar os originais
-	echo -e "\n\nconvertendo, movendo e limpando ..."
-	echo "modo: HIPERBOOST! 3"
+	echo -e "\nconvertendo, movendo e limpando ..."
+	echo -e "\nmodo: HIPERBOOST! 3"
 
 	contagem=0
 	multi_thread=0
@@ -261,7 +261,7 @@ spider(){
 	done
 
 	#listar e unir todos em um só, e deletar todos os demais
-	echo -e "\n\nunindo ..."
+	echo -e "unindo ..."
 	for audios in wavs/*;do
 		[[ "${audios}" = 'wavs/*' ]] || {
 			array+=( "${audios}" )
@@ -284,20 +284,53 @@ spider(){
 		[[ "${audios}" = *"vocals.wav"* ]] || rm -f "${audios}" 1>&-
 	done
 	mv wavs/reunido/vocals.wav wavs/ 1>&-
-	rm -rf wavs/reunido 1>&-
-
-	echo "cortando vozes ..."
+	rm -r wavs/reunido 1>&-
 
 	#dividir audio longo na pasta:
-	echo -e "\n\nseparando vozes ..."
+	echo "cortando vozes ..."
 	sox wavs/vocals.wav -r 22050 -c 1 -b 16 wavs/corte.wav silence -l 1 0.100 0.1% 1 0.050 0.1% : newfile : restart 1>&-
 
 	echo "limpando arquivo original ..."
 	sleep 15s
 	rm -f wavs/vocals.wav 1>&-
 
+	echo "verificando tamanho dos audios ..."
+	for audios in wavs/corte*;do
+		[[ "$(sox --i "${audios}")" =~ ([0-9]{2}\:){2}[0-9]{2}\.[0-9]{2} ]] && {
+			[[ "${BASH_REMATCH[0]}" > "00:00:08.00" ]] && {
+				mark=1
+				echo -e "audio ${audios} passou mais que 8 segundos. Tempo {${BASH_REMATCH[0]}} | [sub-dividindo] ..."
+				sox "${audios}" -r 22050 -c 1 -b 16 wavs/subcorte.wav silence -l 1 0.050 0.5% 1 0.050 0.5% : newfile : restart 1>&-
+				rm -r "${audios}"
+			} 
+			[[ "${BASH_REMATCH[0]}" < "00:00:01.99" ]] && {
+				mark=1
+				echo "audio  ${audios} menor que 1.99 segundos. [deletando] ..."
+				rm -r "${audios}"
+			}
+		}
+	done
+
+	[[ ${mark} ]] && {
+		echo -e "\nsub verificação ativada!"
+		for audios in wavs/*;do
+			[[ "$(sox --i "${audios}")" =~ ([0-9]{2}\:){2}[0-9]{2}\.[0-9]{2} ]] && {
+				[[ "${BASH_REMATCH[0]}" > "00:00:08.00" ]] && {
+					echo -e "audio ${audios} passou mais que 8 segundos. Tempo {${BASH_REMATCH[0]}} | [sub-dividindo] ..."
+					sox "${audios}" -r 22050 -c 1 -b 16 wavs/subcorte.wav silence -l 1 0.050 0.8% 1 0.050 0.8% : newfile : restart 1>&-
+					rm -r "${audios}"
+				} 
+				[[ "${BASH_REMATCH[0]}" < "00:00:01.99" ]] && {
+					echo "audio  ${audios} menor que 1.99 segundos. [deletando] ..."
+					rm -r "${audios}"
+				}
+			}
+		done
+
+	}
+
 	echo "compactando ..."
-	zip -r pre_data.zip wavs/
+	zip -r pre_data.zip wavs/ 1>$-
 
 	rm -r wavs/* 1>&-
 
@@ -329,20 +362,20 @@ spider(){
 	#verificar existência da pasta wavs, e deletar arquivos de audios que estiverem internamente:
 	[[ -a wavs ]] || mkdir wavs
 
-	echo -e "\n\n descompactando ..."
+	echo -e "descompactando ..."
 	#buscar compactados, e descompactar:
 	for compactados in *.zip;do
 		echo "entrou, arquivo: ${compactados}"
 		[[ "${compactados}" = *"*.zip"* ]] && break
 		unzip -j "${compactados}" || {
-			echo -e "\n\n  um erro ocorreu com seu arquivo compactado ..."
+			echo -e "um erro ocorreu com seu arquivo compactado ..."
 			exit
 		}
 		rm -rf "${compactados}" 1>&-
 	done
 
 	#movendo arquivos
-	echo -e "\n\n movendo ..."
+	echo -e "movendo ..."
 	for audio in *.wav;do
 		mv "${audio}" "wavs/${audio}" 1>&-
 	done
@@ -370,7 +403,7 @@ spider(){
 	}
 
 	#reduzir a velocidade dos audios para melhor transcrição:
-	echo -e "\n\nreduzindo velocidade do som ..."
+	echo -e "reduzindo velocidade do som ..."
 	for audios in wavs/*;do 
 		[[ "${audios}" = *".wav"* ]] || {
 			ffmpeg -y -i "${audios}" "${audios%%.*}.wav" 1>&-
@@ -381,14 +414,14 @@ spider(){
 	done
 
 	#primeiro, ele irá converter os audios em uma forma que a google entenda:
-	echo -e "\n\nconvertendo de slow.wav para slow.flac ..."
+	echo -e "convertendo de slow.wav para slow.flac ..."
 	for audio in wavs/*_slow.wav;do
 		ffmpeg -y -i "${audio}" -r 48k "${audio%%.*}.flac" 1>&-
 		rm -f "${audio}" 1>&-
 	done
 
 	#buscar arquivos convertidos, e aplicar silêncio neles.
-	echo -e "\n\naplicando silêncio nos arquivos slow.flac ..."
+	echo -e "aplicando silêncio nos arquivos slow.flac ..."
 	for preparo in wavs/*.flac;do
 		sox ${preparo} "${preparo%%.*}_silent.flac" pad 0.6 0.6 1>&-
 		rm -f "${preparo}" 1>&-
@@ -398,7 +431,7 @@ spider(){
 	rm -rf wavs/*slow.wav
 
 	#transcrever
-	echo -e "\n\ntranscrevendo ..."
+	echo -e "transcrevendo ..."
 	for envio in wavs/*.flac;do
 		transcricao=$(curl -s -X POST --data-binary @"${envio}" --user-agent 'Mozilla/5.0' --header 'Content-Type: audio/x-flac; rate=48000;' "https://www.google.com/speech-api/v2/recognize?output=json&lang=pt-BR&key=AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw&client=Mozilla/5.0" | jq '.result[].alternative[].transcript')
 		rm -f "${envio}" & 1>&-
