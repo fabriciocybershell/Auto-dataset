@@ -245,7 +245,7 @@ spider(){
 	quaisquer tipos de informações.
 	============================================================================"
 
-		exit 0
+		exit 1
 	}
 
 	multi_thread=${contagem}
