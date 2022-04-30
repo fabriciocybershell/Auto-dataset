@@ -182,9 +182,8 @@ spider(){
 				echo "${contagem}/${multi_thread} downloads terminados ..."
 				[[ "$contagem" = "${multi_thread}" ]] && break
 			done
-
+			estavel=1
 		}
-		estavel=1
 	}
 
 	#verificar pasta
@@ -206,23 +205,6 @@ spider(){
 		}
 	done
 
-	[[ "${estavel}" != "1" ]] && {
-
-	echo -e "\n
-	============================================================================
-	ALERTA IMPORTANTE!
-	nenhum arquivo foi encontrado, seja arquivos enviados, links ou quaisquer
-	topos mde referências sobre o conteúdo a buscar, baixar, descompactar ou
-	realocar.
-
-	verifique se você enviou o arquivo de forma solta \"fora das pastas de forma
-	solta\", ou se digitou o nome do personagem, ou se passou algum link ou
-	quaisquer tipos de informações.
-	============================================================================"
-
-		exit 0
-	}
-
 	#converter vídeos e demais formatos para .wav
 	#e mover para o diretório wavs/
 	#e deletar os originais
@@ -233,6 +215,7 @@ spider(){
 	multi_thread=0
 	for audio in *;do
 		[[ "${audio}" =~ \.(webm|oga|ogg|opus|mp3|mp4|m4a|mpeg|flac|raw|avi|mkv|ps|aac|wma|mp2|aiff) ]] && {
+			estavel=1
 		(
 			name="wavs/${audio%%\[*}.wav"
 			ffmpeg -y -i "${audio}" -ac 1 -ar 44100 "${name// /\_}" 2>&-
@@ -247,6 +230,23 @@ spider(){
 			rm -f "${audio}" 1>&-
 		}
 	done
+
+	[[ "${estavel}" ]] || {
+
+	echo -e "\n
+	============================================================================
+	ALERTA IMPORTANTE!
+	nenhum arquivo foi encontrado, seja arquivos enviados, links ou quaisquer
+	tipos de referências sobre o conteúdo a buscar, baixar, descompactar ou
+	realocar.
+
+	verifique se você enviou o arquivo de forma solta \"fora das pastas de forma
+	solta\", ou se digitou o nome do personagem, ou se passou algum link ou
+	quaisquer tipos de informações.
+	============================================================================"
+
+		exit 0
+	}
 
 	multi_thread=${contagem}
 
