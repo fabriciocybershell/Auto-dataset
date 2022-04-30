@@ -353,100 +353,90 @@ spider(){
 
 [[ ${5,,} =~ (false|true) ]] && {
 
-[[ -a pre_data.zip ]] && unzip pre_data.zip
-	#TRANSCREVER:
+	[[ ${6} -eq 1 ]] && {
 
-	#verificando se tem compactado gerado or este algoritmo:
-	[[ -a pre_data.zip ]] && rm -f pre_data.zip
+		[[ -a pre_data.zip ]] && unzip pre_data.zip
+		#TRANSCREVER:
 
-	#verificar existência da pasta wavs, e deletar arquivos de audios que estiverem internamente:
-	[[ -a wavs ]] || mkdir wavs
+		#verificando se tem compactado gerado ou este algoritmo:
+		[[ -a pre_data.zip ]] && rm -f pre_data.zip
 
-	echo -e "descompactando ..."
-	#buscar compactados, e descompactar:
-	for compactados in *.zip;do
-		echo "entrou, arquivo: ${compactados}"
-		[[ "${compactados}" = *"*.zip"* ]] && break
-		unzip -j "${compactados}" || {
-			echo -e "um erro ocorreu com seu arquivo compactado ..."
+		#verificar existência da pasta wavs, e deletar arquivos de audios que estiverem internamente:
+		[[ -a wavs ]] || mkdir wavs
+
+		echo -e "descompactando ..."
+		#buscar compactados, e descompactar:
+		for compactados in *.zip;do
+			echo "entrou, arquivo: ${compactados}"
+			[[ "${compactados}" = *"*.zip"* ]] && break
+			unzip -j "${compactados}" || {
+				echo -e "um erro ocorreu com seu arquivo compactado ..."
+				exit
+			}
+			rm -rf "${compactados}" 1>&-
+		done
+
+		#movendo arquivos
+		echo -e "movendo ..."
+		for audio in *.wav;do
+			mv "${audio}" "wavs/${audio}" 1>&-
+		done
+
+		[[ ${5,,} = "true" ]] && {
+			echo "gerando lista ..."
+			for envio in wavs/*;do
+				echo "${envio}|" >> list.txt
+			done
+			sed -i '/^\s*$/d' list.txt
+			echo "lista gerada!"
 			exit
 		}
-		rm -rf "${compactados}" 1>&-
-	done
 
-	#movendo arquivos
-	echo -e "movendo ..."
-	for audio in *.wav;do
-		mv "${audio}" "wavs/${audio}" 1>&-
-	done
-
-	#avaliar os que passam de 8 segundos de audio:
-	for audio in wavs/*;do
-		[[ "$(sox --i ${audio})" =~ ([0-9]{2}\:){2}[0-9]{2}\.[0-9]{2} ]] && {
-			IFS=':' read F1 F2 F3 <<< "${BASH_REMATCH[0]%%.*}"
-			[[ ${F3} > 18 ]] && {
-				echo "audio ${audio} possui ${BASH_REMATCH[0]} de duração."
-				echo "a remover ..."
-				rm -rf "${audio}"
+		#reduzir a velocidade dos audios para melhor transcrição:
+		echo -e "reduzindo velocidade do som ..."
+		for audios in wavs/*;do 
+			[[ "${audios}" = *".wav"* ]] || {
+				ffmpeg -y -i "${audios}" "${audios%%.*}.wav" 1>&- 2>&-
+				rm -f "${audios}" 1>&-
 			}
-		}
-	done
 
-	[[ ${5,,} = "true" ]] && {
-		echo "gerando lista ..."
-		for envio in wavs/*;do
-			echo "${envio}|" >> list.txt
+			sox "${audios%%.*}.wav" "${audios%%.*}_slow.wav" speed 0.85 1>&-
 		done
-		sed -i '/^\s*$/d' list.txt
-		echo "lista gerada!"
-		exit
-	}
 
-	#reduzir a velocidade dos audios para melhor transcrição:
-	echo -e "reduzindo velocidade do som ..."
-	for audios in wavs/*;do 
-		[[ "${audios}" = *".wav"* ]] || {
-			ffmpeg -y -i "${audios}" "${audios%%.*}.wav" 1>&-
-			rm -f "${audios}" 1>&-
-		}
+		#primeiro, ele irá converter os audios em uma forma que a google entenda:
+		echo -e "convertendo de slow.wav para slow.flac ..."
+		for audio in wavs/*_slow.wav;do
+			ffmpeg -y -i "${audio}" -r 48k "${audio%%.*}.flac" 1>&- 2>&-
+			rm -f "${audio}" 1>&-
+		done
 
-		sox "${audios%%.*}.wav" "${audios%%.*}_slow.wav" speed 0.85 1>&-
-	done
+		#buscar arquivos convertidos, e aplicar silêncio neles.
+		echo -e "aplicando silêncio nos arquivos slow.flac ..."
+		for preparo in wavs/*.flac;do
+			sox ${preparo} "${preparo%%.*}_silent.flac" pad 0.6 0.6 1>&-
+			rm -f "${preparo}" 1>&-
+			mv "${preparo%%.*}_silent.flac" "${preparo}" 1>&-
+		done
 
-	#primeiro, ele irá converter os audios em uma forma que a google entenda:
-	echo -e "convertendo de slow.wav para slow.flac ..."
-	for audio in wavs/*_slow.wav;do
-		ffmpeg -y -i "${audio}" -r 48k "${audio%%.*}.flac" 1>&-
-		rm -f "${audio}" 1>&-
-	done
+		rm -rf wavs/*slow.wav
 
-	#buscar arquivos convertidos, e aplicar silêncio neles.
-	echo -e "aplicando silêncio nos arquivos slow.flac ..."
-	for preparo in wavs/*.flac;do
-		sox ${preparo} "${preparo%%.*}_silent.flac" pad 0.6 0.6 1>&-
-		rm -f "${preparo}" 1>&-
-		mv "${preparo%%.*}_silent.flac" "${preparo}" 1>&-
-	done
+		#transcrever
+		echo -e "transcrevendo ..."
+		for envio in wavs/*.flac;do
+			transcricao=$(curl -s -X POST --data-binary @"${envio}" --user-agent 'Mozilla/5.0' --header 'Content-Type: audio/x-flac; rate=48000;' "https://www.google.com/speech-api/v2/recognize?output=json&lang=pt-BR&key=AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw&client=Mozilla/5.0" | jq '.result[].alternative[].transcript')
+			rm -f "${envio}" & 1>&-
 
-	rm -rf wavs/*slow.wav
+			while read linha;do
+				texto=${linha//\"/}
+			done <<< "${transcricao,,}"
 
-	#transcrever
-	echo -e "transcrevendo ..."
-	for envio in wavs/*.flac;do
-		transcricao=$(curl -s -X POST --data-binary @"${envio}" --user-agent 'Mozilla/5.0' --header 'Content-Type: audio/x-flac; rate=48000;' "https://www.google.com/speech-api/v2/recognize?output=json&lang=pt-BR&key=AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw&client=Mozilla/5.0" | jq '.result[].alternative[].transcript')
-		rm -f "${envio}" & 1>&-
-
-		while read linha;do
-			texto=${linha//\"/}
-		done <<< "${transcricao,,}"
-
-		echo "${envio%%_slow*}.wav|${texto:+$texto\.}"
-		echo "${envio%%_slow*}.wav|${texto:+$texto\.}" >> list.txt
-		[[ ${texto} ]] && {
-			printf " %s" "OK"
-		}
-	done
-	zip dataset.zip wavs/* list.txt
+			echo "${envio%%_slow*}.wav|${texto:+$texto.}"
+			echo "${envio%%_slow*}.wav|${texto:+$texto.}" >> list.txt
+			[[ ${texto} ]] && {
+				printf " %s " "OK"
+			}
+		done
+		zip dataset.zip wavs/* list.txt
 
 	echo -e "\n
 	============================================================================
@@ -462,4 +452,25 @@ spider(){
 	OBS: você deve lembrar sempre que no final das suas transcrições, eles 
 	terminam com um destes caracteres: ,.!
 	============================================================================"
+	}
+
+	[[ ${6} -eq 2 && "${7}" ]] && {
+		while read linha;do
+			[[ *"${7}"* = "${linha}" ]] && {
+				echo -e "\npré-transcrição: ${linha##*\|}\n"
+				break
+			}
+		done < list.txt
+	}
+
+	[[ ${6} -eq 3 ]] && {
+		#verificar as terminações de cada linha
+		while read linha;do
+			quantidade="${#linha}"
+			quantidade=$[quantidade-1]
+			[[ "${linha:$quantidade:$quantidade}" = ',' ]] && {
+				sed -i "s/${linha}/${linha%,*}." list.txt
+			}
+		done < list.txt
+	}
 }
