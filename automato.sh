@@ -132,6 +132,7 @@ spider(){
 				IFS=',' read F1 F2 <<< "${F2}"
 			} || break
 		done
+		estavel=1
 		#botar threads aqui -----------------------------------------------------------
 	}
 
@@ -183,6 +184,7 @@ spider(){
 			done
 
 		}
+		estavel=1
 	}
 
 	#verificar pasta
@@ -191,7 +193,7 @@ spider(){
 	#deletar arquivo de lista caso tiver
 	[[ -a list.txt ]] && rm -f list.txt
 
-	#verificando se tem compactado gerado or este algoritmo:
+	#verificando se tem compactado gerado ou este algoritmo:
 	[[ -a pre_data.zip ]] && rm -f pre_data.zip
 
 	#buscar compactados, e descompactar:
@@ -200,8 +202,26 @@ spider(){
 		[[ "${compactados}" = '*.zip' || ${compactados} ]] || {
 			unzip -j "${compactados}" 1>&-
 			rm -rf "${compactados}"  1>&-
+			estavel=1
 		}
 	done
+
+	[[ "${estavel}" != "1" ]] && {
+
+	echo -e "\n
+	============================================================================
+	ALERTA IMPORTANTE!
+	nenhum arquivo foi encontrado, seja arquivos enviados, links ou quaisquer
+	topos mde referências sobre o conteúdo a buscar, baixar, descompactar ou
+	realocar.
+
+	verifique se você enviou o arquivo de forma solta \"fora das pastas de forma
+	solta\", ou se digitou o nome do personagem, ou se passou algum link ou
+	quaisquer tipos de informações.
+	============================================================================"
+
+		exit 0
+	}
 
 	#converter vídeos e demais formatos para .wav
 	#e mover para o diretório wavs/
