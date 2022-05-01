@@ -1,6 +1,6 @@
 #! /bin/bash
 
-echo "analisando informações e verificando dependências, aguarde até terminar ..."
+[[ "${7}" ]] || echo "analisando informações e verificando dependências, aguarde até terminar ..."
 
 programs=(  sox spleeter ffmpeg jq  yt-dlp )
 for verificar in ${programs[@]};do
@@ -377,9 +377,11 @@ spider(){
 
 		#movendo arquivos
 		echo -e "movendo ..."
-		for audio in *.wav;do
-			mv "${audio}" "wavs/${audio}" 1>&-
-		done
+#		for audio in *.wav;do
+#			mv "${audio}" "wavs/${audio}" 1>&-
+#		done
+
+		mv *.wav wavs/ 1>&-
 
 		[[ ${5,,} = "true" ]] && {
 			echo "gerando lista ..."
@@ -454,6 +456,7 @@ spider(){
 	}
 
 	[[ ${6} -eq 2 && "${7}" ]] && {
+		echo "arquivo a parear: ${7}"
 		while read linha;do
 			[[ "${linha}" = *"${7}"* ]] && {
 				echo -e "\npré-transcrição: ${linha##*\|}\n"
