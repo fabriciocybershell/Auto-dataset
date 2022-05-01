@@ -471,8 +471,14 @@ spider(){
 		while read linha;do
 			quantidade="${#linha}"
 			quantidade=$[quantidade-1]
-			[[ "${linha:$quantidade:$quantidade}" = ',' ]] && {
+			#caso terminar com ',', trocar por '.'
+			[[ "${linha:$quantidade:$quantidade}" = ','  ]] && {
 				sed -i "s/${linha}/${linha%,*}." list.txt
+			}
+
+			#caso não terminar com nenhum símbolo, adicionar '.'
+			[[ "${linha:$quantidade:$quantidade}" =~ (\.|\?|\!) ]] || {
+				sed -i "s/${linha}/${linha}." list.txt
 			}
 		done < list.txt
 	}
