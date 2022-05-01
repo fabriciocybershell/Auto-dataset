@@ -393,9 +393,9 @@ spider(){
 
 		#reduzir a velocidade dos audios para melhor transcrição:
 		echo -e "reduzindo velocidade do som ..."
-		for audios in wavs/*;do 
+		for audios in wavs/*;do
 			[[ "${audios}" = *".wav"* ]] || {
-				ffmpeg -y -i "${audios}" "${audios%%.*}.wav" 1>&- 2>&-
+				ffmpeg -y -i "${audios}" "${audios%%.*}.wav" 1>&-
 				rm -f "${audios}" 1>&-
 			}
 
@@ -460,6 +460,7 @@ spider(){
 				break
 			}
 		done < list.txt
+		echo -e "\n\n NENHUMA TRANSCRIÇÃO ENCONTRADA! \n\n"
 	}
 
 	[[ ${6} -eq 3 ]] && {
