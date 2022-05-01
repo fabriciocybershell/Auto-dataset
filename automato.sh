@@ -463,7 +463,7 @@ spider(){
 				break
 			}
 		done < list.txt
-		echo -e "\n\n NENHUMA TRANSCRIÇÃO ENCONTRADA! \n\n"
+		[[ ${linha##*\|} ]] || echo -e "\n\n NENHUMA TRANSCRIÇÃO ENCONTRADA! \n\n"
 	}
 
 	[[ ${6} -eq 3 ]] && {
