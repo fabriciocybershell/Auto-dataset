@@ -162,7 +162,6 @@ spider(){
 
 			echo "modo: HIPERBOOST! 2"
 
-
 			contagem=0
 
 			for down in ${videos[@]};do
@@ -456,7 +455,7 @@ spider(){
 
 	[[ ${6} -eq 2 && "${7}" ]] && {
 		while read linha;do
-			[[ *"${7}"* = "${linha}" ]] && {
+			[[ "${linha}" = *"${7}"* ]] && {
 				echo -e "\npré-transcrição: ${linha##*\|}\n"
 				break
 			}
