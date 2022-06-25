@@ -296,7 +296,7 @@ spider(){
 	echo "verificando tamanho dos audios ..."
 	for audios in wavs/corte*;do
 		[[ "$(sox --i "${audios}")" =~ ([0-9]{2}\:){2}[0-9]{2}\.[0-9]{2} ]] && {
-			[[ "${BASH_REMATCH[0]}" > "00:00:08.00" ]] && {
+			[[ "${BASH_REMATCH[0]}" > "00:00:12.00" ]] && {
 				mark=1
 				echo -e "audio ${audios} passou mais que 8 segundos. Tempo {${BASH_REMATCH[0]}} | [sub-dividindo] ..."
 				sox "${audios}" -r 22050 -c 1 -b 16 wavs/subcorte.wav silence -l 1 0.050 0.5% 1 0.050 0.5% : newfile : restart 1>&-
@@ -314,7 +314,7 @@ spider(){
 		echo -e "\nsub verificação ativada!"
 		for audios in wavs/*;do
 			[[ "$(sox --i "${audios}")" =~ ([0-9]{2}\:){2}[0-9]{2}\.[0-9]{2} ]] && {
-				[[ "${BASH_REMATCH[0]}" > "00:00:08.00" ]] && {
+				[[ "${BASH_REMATCH[0]}" > "00:00:12.00" ]] && {
 					echo -e "audio ${audios} passou mais que 8 segundos. Tempo {${BASH_REMATCH[0]}} | [sub-dividindo] ..."
 					sox "${audios}" -r 22050 -c 1 -b 16 wavs/subcorte.wav silence -l 1 0.050 0.8% 1 0.050 0.8% : newfile : restart 1>&-
 					rm -r "${audios}"
