@@ -7,7 +7,7 @@
         </head>
   </head>
   <body>
-    <div><h1 class="mensage"></h1></div>
+    <div><h1 id="mensage"></h1></div>
         <div class="area" >
         <ul class="circles">
                 <li></li>
@@ -23,20 +23,51 @@
         </ul>
 </div>
     <script>
-//window.onload = function() {
+
+function getMobileOperatingSystem() {
+    var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+
+    if (/windows phone/i.test(userAgent)) {
+        return "windows_phone";
+    }
+
+    if (/android/i.test(userAgent)) {
+        return "android";
+    }
+
+    if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+        return "ios";
+    }
+
+    return "unknown";
+}
+
+window.onload = function() {
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
-    const code = urlParams.get('code');
-    console.log(code);
-    const shopd = urlParams.get('shop_id')
-    console.log(shopd);
+    const command = urlParams.get('command');
 
-    setTimeout(() => {
-        //window.location.href="https://t.me/roboimpulsionarshopee_bot?start=code="+code+"shop_id="+shopd;
-      window.location.href="https://discord.gg/3HnPrrFE";
-    }, 500);
-//}
-      
+    if(command === 1) {
+      if(getMobileOperatingSystem() === "android"){
+      document.getElementById("mensage").innerHTML="dispositivo: Android GooglePlay"
+//      window.location.href="https://play.google.com/store/apps/details?id=com.app.cimbank27"
+      }
+
+      if(getMobileOperatingSystem() === "ios"){
+        document.getElementById("mensage").innerHTML="dispositivo: Iphone AppleStore"
+  //      window.location.href="https://apps.apple.com/br/app/cim-bank/id1575001333"
+      }
+
+      if(getMobileOperatingSystem() === "windows_phone"){
+          document.getElementById("mensage").innerHTML="dispositivo não suportado";
+      }
+
+      if(getMobileOperatingSystem() === "unknown"){
+        document.getElementById("mensage").innerHTML="dispositivo não reconhecido";
+      }
+
+    }
+}
     </script>
   </body>
 </html>
